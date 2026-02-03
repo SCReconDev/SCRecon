@@ -1,0 +1,110 @@
+services:
+  frontend:
+    build:
+      context: ./scfrontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - dashboard
+    networks: [scnet]
+
+  dashboard:
+    build:
+      context: ./scbackend
+    volumes:
+      - dashboard_state:/app/state
+    environment:
+      - SERVICE=dashboard
+      - PORTSCANNER_URL=http://portscanner:8001
+      - BANNER_URL=http://bannergrabbing:8002
+      - VULN_URL=http://vulnerability:8003
+      - SUBENUM_URL=http://subenum:8004
+      - SMBSHARES_URL=http://smbshares:8005
+      - WHATWEB_URL=http://whatweb:8006
+      - CVE_URL=http://cvelookup:8007
+      - METASPLOIT_URL=http://metasploit:8008
+      - STATE_FILE=/app/state/scan_state.json
+    depends_on:
+      - portscanner
+      - bannergrabbing
+      - vulnerability
+      - subenum
+      - smbshares
+      - whatweb
+      - cvelookup
+      - metasploit
+    networks: [scnet]
+
+  portscanner:
+    build: { context: ./scbackend }
+    environment: [ "SERVICE=portscanner" ]
+    cap_add: [ "NET_RAW", "NET_ADMIN" ]
+    networks: [scnet]
+
+  bannergrabbing:
+    build: { context: ./scbackend }
+    environment: [ "SERVICE=bannergrabbing" ]
+    cap_add: [ "NET_RAW", "NET_ADMIN" ]
+    networks: [scnet]
+
+  vulnerability:
+    build: { context: ./scbackend }
+    environment: [ "SERVICE=vulnerability" ]
+    cap_add: [ "NET_RAW", "NET_ADMIN" ]
+    networks: [scnet]
+
+  subenum:
+    build: { context: ./scbackend }
+    environment: [ "SERVICE=subenum" ]
+    networks: [scnet]
+
+  smbshares:
+    build: { context: ./scbackend }
+    environment: [ "SERVICE=smbshares" ]
+    cap_add: [ "NET_RAW", "NET_ADMIN" ]
+    networks: [scnet]
+
+  whatweb:
+    build: { context: ./scbackend }
+    environment: [ "SERVICE=whatweb" ]
+    networks: [scnet]
+
+  cvelookup:
+    build: { context: ./scbackend }
+    environment: [ "SERVICE=cvelookup" ]
+    networks: [scnet]
+
+ 
+  msfrpcd:
+    image: metasploitframework/metasploit-framework
+    container_name: msfrpcd
+    working_dir: /usr/src/metasploit-framework
+    command: sh -lc "./msfrpcd -f -U msf -P msfpassword -a 0.0.0.0 -p 55553"
+    ports:
+      - "55553:55553"
+    networks: [scnet]
+
+
+
+  metasploit:
+    build: { context: ./scbackend }
+    environment:
+      - SERVICE=metasploit
+      - MSF_RPC_HOST=msfrpcd
+      - MSF_RPC_PORT=55553
+      - MSF_RPC_PASS=msfpassword
+      - MSF_RPC_USER=msf
+      - MSF_RPC_SSL=true
+    depends_on:
+      - msfrpcd
+    networks: [scnet]
+
+    
+volumes:
+  dashboard_state: 
+
+
+networks:
+  scnet:
+    driver: bridge
+
