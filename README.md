@@ -1,4 +1,6 @@
-# SCRecon
+# SCRecon 
+
+SCRecon is an extensible recon & vulnerability management tool.
 
 ## Setup:
 
